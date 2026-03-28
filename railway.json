@@ -1,0 +1,1 @@
+{"deploy": {"startCommand": "java -jar app.jar", "healthcheckPath": "/api/health"}}
