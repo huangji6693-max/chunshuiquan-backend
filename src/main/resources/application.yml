@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://gondola.proxy.rlwy.net:36761/railway
+    username: postgres
+    password: AASwOkfKgTMlYXDwyJqMlaXxzymWlOOf
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  jackson:
+    time-zone: Asia/Shanghai
+
+server:
+  port: 8080
+
+jwt:
+  secret: chunshuiquan-jwt-secret-key-2026-min32chars
+  expiration: 604800000
