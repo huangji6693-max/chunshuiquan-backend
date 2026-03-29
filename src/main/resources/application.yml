@@ -20,3 +20,6 @@ server:
 jwt:
   secret: chunshuiquan-jwt-secret-key-2026-min32chars
   expiration: 604800000
+
+cloudinary:
+  url: ${CLOUDINARY_URL:cloudinary://api_key:api_secret@cloud_name}

@@ -1,16 +1,17 @@
 package com.chunshuiquan.backend.controller;
 
 import com.chunshuiquan.backend.dto.UpdateProfileRequest;
+import com.chunshuiquan.backend.entity.Match;
 import com.chunshuiquan.backend.entity.Profile;
-import com.chunshuiquan.backend.repository.ProfileRepository;
+import com.chunshuiquan.backend.repository.*;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,9 +20,24 @@ import java.util.UUID;
 public class UserController {
 
     private final ProfileRepository profileRepository;
+    private final MessageRepository messageRepository;
+    private final MatchRepository matchRepository;
+    private final SwipeRepository swipeRepository;
+    private final BlockedUserRepository blockedUserRepository;
+    private final ReportRepository reportRepository;
 
-    public UserController(ProfileRepository profileRepository) {
+    public UserController(ProfileRepository profileRepository,
+                          MessageRepository messageRepository,
+                          MatchRepository matchRepository,
+                          SwipeRepository swipeRepository,
+                          BlockedUserRepository blockedUserRepository,
+                          ReportRepository reportRepository) {
         this.profileRepository = profileRepository;
+        this.messageRepository = messageRepository;
+        this.matchRepository = matchRepository;
+        this.swipeRepository = swipeRepository;
+        this.blockedUserRepository = blockedUserRepository;
+        this.reportRepository = reportRepository;
     }
 
     // GET /api/users/me — 当前用户信息
@@ -75,7 +91,7 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // DELETE /api/users/avatar — 删除头像（按 index）
+    // DELETE /api/users/avatar/{index} — 删除头像（按 index）
     @DeleteMapping("/avatar/{index}")
     public ResponseEntity<?> deleteAvatar(
             @AuthenticationPrincipal String userId,
@@ -104,6 +120,40 @@ public class UserController {
             @RequestParam(defaultValue = "20") int size) {
         UUID myId = UUID.fromString(userId);
         List<Profile> feed = profileRepository.findFeed(myId, PageRequest.of(0, size));
+        feed.forEach(p -> p.setPasswordHash(null));
         return ResponseEntity.ok(feed);
+    }
+
+    // DELETE /api/users/me — 注销账号（级联删除：messages → matches → swipes → blocks/reports → profile）
+    @DeleteMapping("/me")
+    @Transactional
+    public ResponseEntity<Void> deleteMe(@AuthenticationPrincipal String userId) {
+        UUID myId = UUID.fromString(userId);
+
+        // 1. 获取涉及该用户的所有 match ID
+        List<UUID> matchIds = matchRepository.findByUser1IdOrUser2Id(myId, myId)
+                .stream().map(Match::getId).toList();
+
+        // 2. 删除这些 match 下的所有消息
+        if (!matchIds.isEmpty()) {
+            messageRepository.deleteByMatchIdIn(matchIds);
+        }
+
+        // 3. 删除 matches
+        matchRepository.deleteByUser1IdOrUser2Id(myId, myId);
+
+        // 4. 删除 swipes
+        swipeRepository.deleteBySwipedIdOrSwiperId(myId, myId);
+
+        // 5. 删除 blocks
+        blockedUserRepository.deleteByBlockerIdOrBlockedId(myId, myId);
+
+        // 6. 删除 reports
+        reportRepository.deleteByReporterIdOrReportedId(myId, myId);
+
+        // 7. 删除 profile
+        profileRepository.deleteById(myId);
+
+        return ResponseEntity.noContent().build();
     }
 }

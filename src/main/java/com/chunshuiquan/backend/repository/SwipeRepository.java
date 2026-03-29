@@ -13,4 +13,6 @@ public interface SwipeRepository extends JpaRepository<Swipe, Long> {
 
     // 防止重复滑动
     boolean existsBySwiperIdAndSwipedId(UUID swiperId, UUID swipedId);
+
+    void deleteBySwipedIdOrSwiperId(UUID swipedId, UUID swiperId);
 }
