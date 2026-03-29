@@ -5,6 +5,7 @@ import com.chunshuiquan.backend.entity.Match;
 import com.chunshuiquan.backend.entity.Message;
 import com.chunshuiquan.backend.entity.Profile;
 import com.chunshuiquan.backend.repository.MatchRepository;
+import com.chunshuiquan.backend.repository.MessageRepository;
 import com.chunshuiquan.backend.repository.ProfileRepository;
 import com.chunshuiquan.backend.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,9 @@ public class MatchController {
     @Autowired
     private MessageService messageService;
 
+    @Autowired
+    private MessageRepository messageRepository;
+
     // GET /api/matches — 获取我的所有 match 列表
     @GetMapping
     public ResponseEntity<?> getMyMatches(@AuthenticationPrincipal UserDetails userDetails) {
@@ -41,6 +46,7 @@ public class MatchController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<Match> matches = matchRepository.findActiveMatchesByUserId(me.getId());
+        OffsetDateTime threshold = OffsetDateTime.now().minusHours(72);
 
         List<Map<String, Object>> result = matches.stream().map(match -> {
             // 找出对方的 ID
@@ -50,6 +56,10 @@ public class MatchController {
             Map<String, Object> item = new HashMap<>();
             item.put("matchId", match.getId());
             item.put("createdAt", match.getCreatedAt());
+
+            boolean isNew = match.getCreatedAt().isAfter(threshold)
+                    && messageRepository.countByMatchId(match.getId()) == 0;
+            item.put("isNew", isNew);
 
             profileRepository.findById(otherId).ifPresent(other -> {
                 Map<String, Object> otherInfo = new HashMap<>();

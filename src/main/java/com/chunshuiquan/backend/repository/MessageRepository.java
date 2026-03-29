@@ -15,6 +15,8 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
 
     Page<Message> findByMatchIdOrderByCreatedAtDesc(UUID matchId, Pageable pageable);
 
+    long countByMatchId(UUID matchId);
+
     long countByMatchIdAndSenderIdNotAndIsReadFalse(UUID matchId, UUID senderId);
 
     void deleteByMatchIdIn(Collection<UUID> matchIds);
