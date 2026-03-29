@@ -129,7 +129,7 @@ public class UserController {
     public ResponseEntity<?> updateFcmToken(
             @AuthenticationPrincipal String userId,
             @RequestBody java.util.Map<String, String> body) {
-        String token = body.get("token");
+        String token = body.getOrDefault("fcmToken", body.get("token"));
         return profileRepository.findById(UUID.fromString(userId))
                 .map(profile -> {
                     profile.setFcmToken(token);
