@@ -18,6 +18,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +61,9 @@ public class MatchController {
             MatchItemDto.OtherUserDto otherDto = profileRepository.findById(otherId)
                     .map(other -> new MatchItemDto.OtherUserDto(
                             other.getId(), other.getEmail(), other.getName(),
-                            other.getBio(), other.getAvatarUrls(), other.getJobTitle()))
+                            other.getBio(),
+                            other.getAvatarUrls() != null ? Arrays.asList(other.getAvatarUrls()) : Collections.emptyList(),
+                            other.getJobTitle()))
                     .orElse(null);
 
             return new MatchItemDto(match.getId(), match.getCreatedAt(), isNew, otherDto);
