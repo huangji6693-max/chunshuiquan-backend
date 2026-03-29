@@ -1,11 +1,12 @@
 package com.chunshuiquan.backend.controller;
 
-import io.agora.media.RtcTokenBuilder;
+import com.chunshuiquan.backend.util.agora.RtcTokenBuilder2;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -13,35 +14,35 @@ import java.util.Map;
 @RequestMapping("/api/agora")
 public class AgoraController {
 
-    @Value("${agora.app-id}")
+    @Value("${agora.appId}")
     private String appId;
 
-    @Value("${agora.app-certificate}")
+    @Value("${agora.appCertificate}")
     private String appCertificate;
 
+    private static final int TOKEN_EXPIRE_SECONDS = 3600;
+    private static final int PRIVILEGE_EXPIRE_SECONDS = 3600;
+
     /**
-     * GET /api/agora/token?channelName={matchId}&uid=0
-     *
-     * Returns an RTC token valid for 1 hour.
-     * channelName 传 matchId (UUID string)，双方用同一个 matchId 就能进同一频道。
+     * GET /api/agora/token?channelName={matchId}
+     * Requires valid JWT (Spring Security). uid 统一用 0，Agora 自动分配。
      */
     @GetMapping("/token")
-    public ResponseEntity<Map<String, Object>> getToken(
-            @RequestParam String channelName,
-            @RequestParam(defaultValue = "0") int uid,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        int expireTs = (int) (System.currentTimeMillis() / 1000) + 3600;
-
-        String token = new RtcTokenBuilder().buildTokenWithUid(
-                appId, appCertificate, channelName, uid,
-                RtcTokenBuilder.Role.Role_Publisher, expireTs);
+    public ResponseEntity<Map<String, Object>> getToken(@RequestParam String channelName) throws Exception {
+        String token = new RtcTokenBuilder2().buildTokenWithUid(
+                appId, appCertificate,
+                channelName,
+                0,
+                RtcTokenBuilder2.Role.ROLE_PUBLISHER,
+                TOKEN_EXPIRE_SECONDS,
+                PRIVILEGE_EXPIRE_SECONDS
+        );
 
         return ResponseEntity.ok(Map.of(
                 "token", token,
                 "appId", appId,
-                "channelName", channelName,
-                "uid", uid
+                "uid", 0,
+                "channelName", channelName
         ));
     }
 }
