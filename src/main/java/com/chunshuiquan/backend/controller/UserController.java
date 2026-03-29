@@ -28,7 +28,7 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<Profile> me(@AuthenticationPrincipal String userId) {
         return profileRepository.findById(UUID.fromString(userId))
-                .map(p -> { p.setPasswordHash(null); return ResponseEntity.ok(p); })
+                .map(p -> { return ResponseEntity.ok(p); })
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -48,7 +48,6 @@ public class UserController {
                     if (req.getLookingFor() != null)
                         profile.setLookingFor(req.getLookingFor());
                     profile = profileRepository.save(profile);
-                    profile.setPasswordHash(null);
                     return ResponseEntity.ok(profile);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -71,7 +70,6 @@ public class UserController {
                     urls.add(url);
                     profile.setAvatarUrls(urls.toArray(new String[0]));
                     profile = profileRepository.save(profile);
-                    profile.setPasswordHash(null);
                     return ResponseEntity.ok(profile);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -94,7 +92,6 @@ public class UserController {
                     urls.remove(index);
                     profile.setAvatarUrls(urls.toArray(new String[0]));
                     profile = profileRepository.save(profile);
-                    profile.setPasswordHash(null);
                     return ResponseEntity.ok((Object) profile);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -107,7 +104,6 @@ public class UserController {
             @RequestParam(defaultValue = "20") int size) {
         UUID myId = UUID.fromString(userId);
         List<Profile> feed = profileRepository.findFeed(myId, PageRequest.of(0, size));
-        feed.forEach(p -> p.setPasswordHash(null));
         return ResponseEntity.ok(feed);
     }
 }
