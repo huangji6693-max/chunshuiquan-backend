@@ -11,6 +11,7 @@ import java.util.UUID;
 public class AuthResponse {
 
     private String token;
+    private String refreshToken;
     private UUID id;
     private String name;
     private String email;
@@ -21,9 +22,10 @@ public class AuthResponse {
     private String[] avatarUrls;
     private String[] tags;
 
-    public static AuthResponse of(String token, Profile p) {
+    public static AuthResponse of(String token, String refreshToken, Profile p) {
         AuthResponse r = new AuthResponse();
         r.token = token;
+        r.refreshToken = refreshToken;
         r.id = p.getId();
         r.name = p.getName();
         r.email = p.getEmail();

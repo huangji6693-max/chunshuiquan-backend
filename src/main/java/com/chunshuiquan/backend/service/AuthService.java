@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -37,7 +38,11 @@ public class AuthService {
         p.setBirthDate(req.getBirthDate());
         p.setGender(req.getGender());
         p = profileRepository.save(p);
-        return AuthResponse.of(jwtUtil.generateToken(p.getId().toString()), p);
+        String userId = p.getId().toString();
+        return AuthResponse.of(
+                jwtUtil.generateToken(userId),
+                jwtUtil.generateRefreshToken(userId),
+                p);
     }
 
     public AuthResponse login(LoginRequest req) {
@@ -48,6 +53,23 @@ public class AuthService {
         }
         p.setLastActive(OffsetDateTime.now());
         profileRepository.save(p);
-        return AuthResponse.of(jwtUtil.generateToken(p.getId().toString()), p);
+        String userId = p.getId().toString();
+        return AuthResponse.of(
+                jwtUtil.generateToken(userId),
+                jwtUtil.generateRefreshToken(userId),
+                p);
+    }
+
+    public AuthResponse refresh(String refreshToken) {
+        if (!jwtUtil.isValid(refreshToken) || !jwtUtil.isRefreshToken(refreshToken)) {
+            throw new IllegalArgumentException("无效的 refresh token");
+        }
+        String userId = jwtUtil.extractUserId(refreshToken);
+        Profile p = profileRepository.findById(UUID.fromString(userId))
+                .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+        return AuthResponse.of(
+                jwtUtil.generateToken(userId),
+                jwtUtil.generateRefreshToken(userId), // rotation
+                p);
     }
 }

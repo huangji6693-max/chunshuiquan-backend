@@ -15,18 +15,30 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
 
-    @Value("${jwt.expiration}")
-    private long expiration;
+    @Value("${jwt.expiration:3600000}")
+    private long expiration; // access token 默认1小时
+
+    @Value("${jwt.refresh-expiration:2592000000}")
+    private long refreshExpiration; // refresh token 默认30天
 
     private SecretKey signingKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
     public String generateToken(String userId) {
+        return buildToken(userId, expiration, "access");
+    }
+
+    public String generateRefreshToken(String userId) {
+        return buildToken(userId, refreshExpiration, "refresh");
+    }
+
+    private String buildToken(String userId, long ttl, String type) {
         return Jwts.builder()
                 .subject(userId)
+                .claim("type", type)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .expiration(new Date(System.currentTimeMillis() + ttl))
                 .signWith(signingKey())
                 .compact();
     }
@@ -39,6 +51,14 @@ public class JwtUtil {
         try {
             parseClaims(token);
             return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isRefreshToken(String token) {
+        try {
+            return "refresh".equals(parseClaims(token).get("type", String.class));
         } catch (Exception e) {
             return false;
         }

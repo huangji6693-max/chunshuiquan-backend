@@ -2,6 +2,7 @@ package com.chunshuiquan.backend.controller;
 
 import com.chunshuiquan.backend.dto.AuthResponse;
 import com.chunshuiquan.backend.dto.LoginRequest;
+import com.chunshuiquan.backend.dto.RefreshRequest;
 import com.chunshuiquan.backend.dto.RegisterRequest;
 import com.chunshuiquan.backend.service.AuthService;
 import jakarta.validation.Valid;
@@ -30,7 +31,11 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(req));
     }
 
-    // 统一错误响应
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@RequestBody RefreshRequest req) {
+        return ResponseEntity.ok(authService.refresh(req.getRefreshToken()));
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleBiz(IllegalArgumentException e) {
         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
