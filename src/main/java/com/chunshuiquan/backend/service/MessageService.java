@@ -28,11 +28,11 @@ public class MessageService {
     @Autowired
     private PushNotificationService pushNotificationService;
 
-    public Message sendMessage(UUID matchId, String senderEmail, String content) {
+    public Message sendMessage(UUID matchId, String senderId, String content) {
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Match not found"));
 
-        Profile sender = profileRepository.findByEmail(senderEmail)
+        Profile sender = profileRepository.findById(UUID.fromString(senderId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // 确认发送者是 match 的参与者
@@ -61,11 +61,11 @@ public class MessageService {
         return saved;
     }
 
-    public Page<Message> getMessages(UUID matchId, String userEmail, Pageable pageable) {
+    public Page<Message> getMessages(UUID matchId, String userId, Pageable pageable) {
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Match not found"));
 
-        Profile user = profileRepository.findByEmail(userEmail)
+        Profile user = profileRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         boolean isParticipant = match.getUser1Id().equals(user.getId())

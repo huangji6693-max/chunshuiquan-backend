@@ -13,7 +13,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
@@ -41,8 +40,8 @@ public class MatchController {
 
     // GET /api/matches — 获取我的所有 match 列表
     @GetMapping
-    public ResponseEntity<?> getMyMatches(@AuthenticationPrincipal UserDetails userDetails) {
-        Profile me = profileRepository.findByEmail(userDetails.getUsername())
+    public ResponseEntity<?> getMyMatches(@AuthenticationPrincipal String userId) {
+        Profile me = profileRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<Match> matches = matchRepository.findActiveMatchesByUserId(me.getId());
@@ -83,9 +82,9 @@ public class MatchController {
     public ResponseEntity<?> sendMessage(
             @PathVariable UUID matchId,
             @RequestBody MessageRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal String userId) {
         try {
-            Message message = messageService.sendMessage(matchId, userDetails.getUsername(), request.getContent());
+            Message message = messageService.sendMessage(matchId, userId, request.getContent());
             Map<String, Object> resp = new HashMap<>();
             resp.put("id", message.getId());
             resp.put("content", message.getContent());
@@ -103,10 +102,10 @@ public class MatchController {
             @PathVariable UUID matchId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal String userId) {
         try {
             Page<Message> messages = messageService.getMessages(
-                    matchId, userDetails.getUsername(), PageRequest.of(page, size));
+                    matchId, userId, PageRequest.of(page, size));
 
             Map<String, Object> resp = new HashMap<>();
             resp.put("content", messages.getContent().stream().map(m -> {
