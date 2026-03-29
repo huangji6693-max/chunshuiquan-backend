@@ -1,13 +1,17 @@
 package com.chunshuiquan.backend.service;
 
+import com.chunshuiquan.backend.dto.SwipeResult;
 import com.chunshuiquan.backend.entity.Match;
+import com.chunshuiquan.backend.entity.Profile;
 import com.chunshuiquan.backend.entity.Swipe;
 import com.chunshuiquan.backend.repository.MatchRepository;
+import com.chunshuiquan.backend.repository.ProfileRepository;
 import com.chunshuiquan.backend.repository.SwipeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -15,17 +19,21 @@ public class SwipeService {
 
     private final SwipeRepository swipeRepository;
     private final MatchRepository matchRepository;
+    private final ProfileRepository profileRepository;
 
-    public SwipeService(SwipeRepository swipeRepository, MatchRepository matchRepository) {
+    public SwipeService(SwipeRepository swipeRepository,
+                        MatchRepository matchRepository,
+                        ProfileRepository profileRepository) {
         this.swipeRepository = swipeRepository;
         this.matchRepository = matchRepository;
+        this.profileRepository = profileRepository;
     }
 
     @Transactional
-    public boolean swipe(UUID swiperId, UUID swipedId, String direction) {
+    public SwipeResult swipe(UUID swiperId, UUID swipedId, String direction) {
         // 幂等：已经滑过就忽略
         if (swipeRepository.existsBySwiperIdAndSwipedId(swiperId, swipedId)) {
-            return false;
+            return SwipeResult.noMatch();
         }
 
         Swipe swipe = new Swipe();
@@ -41,15 +49,29 @@ public class SwipeService {
             if (mutualLike) {
                 UUID u1 = swiperId.compareTo(swipedId) < 0 ? swiperId : swipedId;
                 UUID u2 = swiperId.compareTo(swipedId) < 0 ? swipedId : swiperId;
-                if (!matchRepository.existsByUser1IdAndUser2Id(u1, u2)) {
-                    Match match = new Match();
+
+                Match match;
+                Optional<Match> existing = matchRepository.findByUser1IdAndUser2Id(u1, u2);
+                if (existing.isEmpty()) {
+                    match = new Match();
                     match.setUser1Id(u1);
                     match.setUser2Id(u2);
-                    matchRepository.save(match);
+                    match = matchRepository.save(match);
+                } else {
+                    match = existing.get();
                 }
-                return true;
+
+                // 返回对方信息
+                Optional<Profile> partner = profileRepository.findById(swipedId);
+                String partnerName = partner.map(Profile::getName).orElse("Ta");
+                String partnerAvatar = partner
+                        .filter(p -> p.getAvatarUrls() != null && p.getAvatarUrls().length > 0)
+                        .map(p -> p.getAvatarUrls()[0])
+                        .orElse(null);
+
+                return new SwipeResult(true, match.getId(), partnerName, partnerAvatar);
             }
         }
-        return false;
+        return SwipeResult.noMatch();
     }
 }
