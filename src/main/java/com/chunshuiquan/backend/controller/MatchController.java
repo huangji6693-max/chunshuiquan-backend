@@ -1,6 +1,8 @@
 package com.chunshuiquan.backend.controller;
 
+import com.chunshuiquan.backend.dto.MatchItemDto;
 import com.chunshuiquan.backend.dto.MessageRequest;
+import com.chunshuiquan.backend.dto.MessageResponseDto;
 import com.chunshuiquan.backend.entity.Match;
 import com.chunshuiquan.backend.entity.Message;
 import com.chunshuiquan.backend.entity.Profile;
@@ -40,38 +42,27 @@ public class MatchController {
 
     // GET /api/matches — 获取我的所有 match 列表
     @GetMapping
-    public ResponseEntity<?> getMyMatches(@AuthenticationPrincipal String userId) {
+    public ResponseEntity<List<MatchItemDto>> getMyMatches(@AuthenticationPrincipal String userId) {
         Profile me = profileRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         List<Match> matches = matchRepository.findActiveMatchesByUserId(me.getId());
         OffsetDateTime threshold = OffsetDateTime.now().minusHours(72);
 
-        List<Map<String, Object>> result = matches.stream().map(match -> {
-            // 找出对方的 ID
+        List<MatchItemDto> result = matches.stream().map(match -> {
             UUID otherId = match.getUser1Id().equals(me.getId())
                     ? match.getUser2Id() : match.getUser1Id();
 
-            Map<String, Object> item = new HashMap<>();
-            item.put("matchId", match.getId());
-            item.put("createdAt", match.getCreatedAt());
-
             boolean isNew = match.getCreatedAt().isAfter(threshold)
                     && messageRepository.countByMatchId(match.getId()) == 0;
-            item.put("isNew", isNew);
 
-            profileRepository.findById(otherId).ifPresent(other -> {
-                Map<String, Object> otherInfo = new HashMap<>();
-                otherInfo.put("id", other.getId());
-                otherInfo.put("email", other.getEmail());
-                otherInfo.put("name", other.getName());
-                otherInfo.put("bio", other.getBio());
-                otherInfo.put("avatarUrls", other.getAvatarUrls());
-                otherInfo.put("jobTitle", other.getJobTitle());
-                item.put("otherUser", otherInfo);
-            });
+            MatchItemDto.OtherUserDto otherDto = profileRepository.findById(otherId)
+                    .map(other -> new MatchItemDto.OtherUserDto(
+                            other.getId(), other.getEmail(), other.getName(),
+                            other.getBio(), other.getAvatarUrls(), other.getJobTitle()))
+                    .orElse(null);
 
-            return item;
+            return new MatchItemDto(match.getId(), match.getCreatedAt(), isNew, otherDto);
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(result);
@@ -85,11 +76,9 @@ public class MatchController {
             @AuthenticationPrincipal String userId) {
         try {
             Message message = messageService.sendMessage(matchId, userId, request.getContent());
-            Map<String, Object> resp = new HashMap<>();
-            resp.put("id", message.getId());
-            resp.put("content", message.getContent());
-            resp.put("createdAt", message.getCreatedAt());
-            resp.put("senderId", message.getSenderId());
+            MessageResponseDto resp = new MessageResponseDto(
+                    message.getId(), message.getContent(),
+                    message.getCreatedAt(), message.getSenderId(), message.getIsRead());
             return ResponseEntity.ok(resp);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -107,16 +96,14 @@ public class MatchController {
             Page<Message> messages = messageService.getMessages(
                     matchId, userId, PageRequest.of(page, size));
 
+            List<MessageResponseDto> content = messages.getContent().stream()
+                    .map(m -> new MessageResponseDto(
+                            m.getId(), m.getContent(), m.getCreatedAt(),
+                            m.getSenderId(), m.getIsRead()))
+                    .collect(Collectors.toList());
+
             Map<String, Object> resp = new HashMap<>();
-            resp.put("content", messages.getContent().stream().map(m -> {
-                Map<String, Object> item = new HashMap<>();
-                item.put("id", m.getId());
-                item.put("content", m.getContent());
-                item.put("createdAt", m.getCreatedAt());
-                item.put("senderId", m.getSenderId());
-                item.put("isRead", m.getIsRead());
-                return item;
-            }).collect(Collectors.toList()));
+            resp.put("content", content);
             resp.put("totalPages", messages.getTotalPages());
             resp.put("totalElements", messages.getTotalElements());
             resp.put("currentPage", page);
