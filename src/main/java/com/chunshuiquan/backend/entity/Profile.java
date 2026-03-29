@@ -48,6 +48,10 @@ public class Profile {
     private String[] avatarUrls = new String[0];
 
     @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "photo_statuses", columnDefinition = "text[]")
+    private String[] photoStatuses = new String[0];
+
+    @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(columnDefinition = "text[]")
     private String[] tags = new String[0];
 

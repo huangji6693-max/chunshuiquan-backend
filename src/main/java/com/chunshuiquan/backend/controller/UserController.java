@@ -4,6 +4,9 @@ import com.chunshuiquan.backend.dto.UpdateProfileRequest;
 import com.chunshuiquan.backend.entity.Match;
 import com.chunshuiquan.backend.entity.Profile;
 import com.chunshuiquan.backend.repository.*;
+import com.chunshuiquan.backend.service.ClarifaiService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,10 +17,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     private final ProfileRepository profileRepository;
     private final MessageRepository messageRepository;
@@ -25,19 +32,22 @@ public class UserController {
     private final SwipeRepository swipeRepository;
     private final BlockedUserRepository blockedUserRepository;
     private final ReportRepository reportRepository;
+    private final ClarifaiService clarifaiService;
 
     public UserController(ProfileRepository profileRepository,
                           MessageRepository messageRepository,
                           MatchRepository matchRepository,
                           SwipeRepository swipeRepository,
                           BlockedUserRepository blockedUserRepository,
-                          ReportRepository reportRepository) {
+                          ReportRepository reportRepository,
+                          ClarifaiService clarifaiService) {
         this.profileRepository = profileRepository;
         this.messageRepository = messageRepository;
         this.matchRepository = matchRepository;
         this.swipeRepository = swipeRepository;
         this.blockedUserRepository = blockedUserRepository;
         this.reportRepository = reportRepository;
+        this.clarifaiService = clarifaiService;
     }
 
     // GET /api/users/me — 当前用户信息
@@ -78,6 +88,20 @@ public class UserController {
         if (url == null || url.isBlank()) {
             return ResponseEntity.badRequest().body(java.util.Map.of("error", "url 不能为空"));
         }
+
+        // Clarifai 内容预检：NSFW score > 0.85 直接拒绝
+        try {
+            boolean safe = clarifaiService.isImageSafe(url).get(4, TimeUnit.SECONDS);
+            if (!safe) {
+                return ResponseEntity.unprocessableEntity()
+                        .body(java.util.Map.of("error", "图片包含不适宜内容，请更换"));
+            }
+        } catch (TimeoutException e) {
+            logger.warn("Clarifai pre-check timeout for {}, proceeding (fail-open)", url);
+        } catch (Exception e) {
+            logger.error("Clarifai pre-check error for {}, proceeding (fail-open)", url, e);
+        }
+
         return profileRepository.findById(UUID.fromString(userId))
                 .map(profile -> {
                     List<String> urls = new ArrayList<>(Arrays.asList(
@@ -85,6 +109,15 @@ public class UserController {
                     ));
                     urls.add(url);
                     profile.setAvatarUrls(urls.toArray(new String[0]));
+
+                    // 预检已通过，直接标记 approved
+                    List<String> statuses = new ArrayList<>(Arrays.asList(
+                            profile.getPhotoStatuses() != null ? profile.getPhotoStatuses() : new String[0]
+                    ));
+                    while (statuses.size() < urls.size() - 1) statuses.add("approved");
+                    statuses.add("approved");
+                    profile.setPhotoStatuses(statuses.toArray(new String[0]));
+
                     profile = profileRepository.save(profile);
                     return ResponseEntity.ok(profile);
                 })
@@ -107,6 +140,14 @@ public class UserController {
                     }
                     urls.remove(index);
                     profile.setAvatarUrls(urls.toArray(new String[0]));
+
+                    // Keep photoStatuses in sync
+                    List<String> statuses = new ArrayList<>(Arrays.asList(
+                            profile.getPhotoStatuses() != null ? profile.getPhotoStatuses() : new String[0]
+                    ));
+                    if (index < statuses.size()) statuses.remove(index);
+                    profile.setPhotoStatuses(statuses.toArray(new String[0]));
+
                     profile = profileRepository.save(profile);
                     return ResponseEntity.ok((Object) profile);
                 })
