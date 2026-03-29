@@ -124,6 +124,21 @@ public class UserController {
         return ResponseEntity.ok(feed);
     }
 
+    // PUT /api/users/fcm-token — 更新 FCM 推送 token
+    @PutMapping("/fcm-token")
+    public ResponseEntity<?> updateFcmToken(
+            @AuthenticationPrincipal String userId,
+            @RequestBody java.util.Map<String, String> body) {
+        String token = body.get("token");
+        return profileRepository.findById(UUID.fromString(userId))
+                .map(profile -> {
+                    profile.setFcmToken(token);
+                    profileRepository.save(profile);
+                    return ResponseEntity.ok().build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // DELETE /api/users/me — 注销账号（级联删除：messages → matches → swipes → blocks/reports → profile）
     @DeleteMapping("/me")
     @Transactional

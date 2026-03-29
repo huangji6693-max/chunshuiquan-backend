@@ -60,6 +60,10 @@ public class Profile {
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "fcm_token")
+    private String fcmToken;
+
     @PrePersist
     void prePersist() {
         if (createdAt == null) createdAt = OffsetDateTime.now();

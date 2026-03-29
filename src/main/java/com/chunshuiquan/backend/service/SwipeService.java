@@ -20,13 +20,16 @@ public class SwipeService {
     private final SwipeRepository swipeRepository;
     private final MatchRepository matchRepository;
     private final ProfileRepository profileRepository;
+    private final PushNotificationService pushNotificationService;
 
     public SwipeService(SwipeRepository swipeRepository,
                         MatchRepository matchRepository,
-                        ProfileRepository profileRepository) {
+                        ProfileRepository profileRepository,
+                        PushNotificationService pushNotificationService) {
         this.swipeRepository = swipeRepository;
         this.matchRepository = matchRepository;
         this.profileRepository = profileRepository;
+        this.pushNotificationService = pushNotificationService;
     }
 
     @Transactional
@@ -57,6 +60,20 @@ public class SwipeService {
                     match.setUser1Id(u1);
                     match.setUser2Id(u2);
                     match = matchRepository.save(match);
+                    final Match savedMatch = match;
+
+                    // 通知 swipedId：有新配对
+                    Optional<Profile> swiper = profileRepository.findById(swiperId);
+                    String swiperName = swiper.map(Profile::getName).orElse("Ta");
+                    Optional<Profile> partner = profileRepository.findById(swipedId);
+                    String partnerName = partner.map(Profile::getName).orElse("Ta");
+                    String partnerAvatar = partner
+                            .filter(p -> p.getAvatarUrls() != null && p.getAvatarUrls().length > 0)
+                            .map(p -> p.getAvatarUrls()[0])
+                            .orElse(null);
+                    partner.ifPresent(p -> pushNotificationService.sendNewMatchNotification(
+                            p.getFcmToken(), swiperName, savedMatch.getId().toString()));
+                    return new SwipeResult(true, savedMatch.getId(), partnerName, partnerAvatar);
                 } else {
                     match = existing.get();
                 }

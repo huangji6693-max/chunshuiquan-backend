@@ -25,6 +25,9 @@ public class MessageService {
     @Autowired
     private ProfileRepository profileRepository;
 
+    @Autowired
+    private PushNotificationService pushNotificationService;
+
     public Message sendMessage(UUID matchId, String senderEmail, String content) {
         Match match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Match not found"));
@@ -44,7 +47,18 @@ public class MessageService {
         message.setSenderId(sender.getId());
         message.setContent(content);
 
-        return messageRepository.save(message);
+        Message saved = messageRepository.save(message);
+
+        // 通知对方有新消息
+        UUID receiverId = match.getUser1Id().equals(sender.getId())
+                ? match.getUser2Id() : match.getUser1Id();
+        profileRepository.findById(receiverId).ifPresent(receiver -> {
+            String preview = content.length() > 50 ? content.substring(0, 50) + "…" : content;
+            pushNotificationService.sendNewMessageNotification(
+                    receiver.getFcmToken(), sender.getName(), preview, matchId.toString());
+        });
+
+        return saved;
     }
 
     public Page<Message> getMessages(UUID matchId, String userEmail, Pageable pageable) {
