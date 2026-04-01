@@ -15,4 +15,10 @@ public interface SwipeRepository extends JpaRepository<Swipe, Long> {
     boolean existsBySwiperIdAndSwipedId(UUID swiperId, UUID swipedId);
 
     void deleteBySwipedIdOrSwiperId(UUID swipedId, UUID swiperId);
+
+    /** 查找所有右滑/SuperLike了我的人（我还没有滑过他们的） */
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT s FROM Swipe s WHERE s.swipedId = :userId AND s.direction IN ('RIGHT','UP') " +
+        "AND NOT EXISTS (SELECT 1 FROM Swipe s2 WHERE s2.swiperId = :userId AND s2.swipedId = s.swiperId)")
+    List<Swipe> findWhoLikedMe(@org.springframework.data.repository.query.Param("userId") UUID userId);
 }

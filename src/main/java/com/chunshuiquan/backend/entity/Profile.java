@@ -94,6 +94,10 @@ public class Profile {
     @Column(name = "vip_expires_at")
     private OffsetDateTime vipExpiresAt;
 
+    /** 曝光加速到期时间 */
+    @Column(name = "boost_until")
+    private OffsetDateTime boostUntil;
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "fcm_token")
     private String fcmToken;
