@@ -20,9 +20,11 @@ import org.springframework.web.bind.annotation.*;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -68,8 +70,31 @@ public class MatchController {
                             other.getCity(), other.getSmoking(), other.getDrinking()))
                     .orElse(null);
 
-            return new MatchItemDto(match.getId(), match.getCreatedAt(), isNew, otherDto);
+            // 查询最后一条消息
+            String lastMessage = null;
+            OffsetDateTime lastMessageAt = null;
+            Optional<Message> lastMsg = messageRepository.findTopByMatchIdOrderByCreatedAtDesc(match.getId());
+            if (lastMsg.isPresent()) {
+                Message msg = lastMsg.get();
+                // 截取50字符
+                lastMessage = msg.getContent() != null && msg.getContent().length() > 50
+                        ? msg.getContent().substring(0, 50) + "..."
+                        : msg.getContent();
+                lastMessageAt = msg.getCreatedAt();
+            }
+
+            // 查询未读消息数（对方发的且未读的）
+            int unreadCount = (int) messageRepository.countByMatchIdAndSenderIdNotAndIsReadFalse(
+                    match.getId(), me.getId());
+
+            return new MatchItemDto(match.getId(), match.getCreatedAt(), isNew, otherDto,
+                    lastMessage, lastMessageAt, unreadCount);
         }).collect(Collectors.toList());
+
+        // 按 lastMessageAt 降序排序（有消息的在前，没消息的按 match 创建时间）
+        result.sort(Comparator.comparing(
+                (MatchItemDto dto) -> dto.getLastMessageAt() != null ? dto.getLastMessageAt() : dto.getCreatedAt()
+        ).reversed());
 
         return ResponseEntity.ok(result);
     }

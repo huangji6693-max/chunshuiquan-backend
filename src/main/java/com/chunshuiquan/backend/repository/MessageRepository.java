@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface MessageRepository extends JpaRepository<Message, UUID> {
@@ -21,6 +22,9 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     long countByMatchId(UUID matchId);
 
     long countByMatchIdAndSenderIdNotAndIsReadFalse(UUID matchId, UUID senderId);
+
+    // 查询某个 match 的最后一条消息
+    Optional<Message> findTopByMatchIdOrderByCreatedAtDesc(UUID matchId);
 
     void deleteByMatchIdIn(Collection<UUID> matchIds);
 

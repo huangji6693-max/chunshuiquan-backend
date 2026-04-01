@@ -10,6 +10,9 @@ public class MatchItemDto {
     private OffsetDateTime createdAt;
     private boolean isNew;
     private OtherUserDto otherUser;
+    private String lastMessage;              // 最后一条消息内容（截取50字符）
+    private OffsetDateTime lastMessageAt;    // 最后消息时间
+    private int unreadCount;                 // 未读消息数
 
     public MatchItemDto() {}
 
@@ -18,6 +21,17 @@ public class MatchItemDto {
         this.createdAt = createdAt;
         this.isNew = isNew;
         this.otherUser = otherUser;
+    }
+
+    public MatchItemDto(UUID matchId, OffsetDateTime createdAt, boolean isNew, OtherUserDto otherUser,
+                        String lastMessage, OffsetDateTime lastMessageAt, int unreadCount) {
+        this.matchId = matchId;
+        this.createdAt = createdAt;
+        this.isNew = isNew;
+        this.otherUser = otherUser;
+        this.lastMessage = lastMessage;
+        this.lastMessageAt = lastMessageAt;
+        this.unreadCount = unreadCount;
     }
 
     public UUID getMatchId() { return matchId; }
@@ -31,6 +45,15 @@ public class MatchItemDto {
 
     public OtherUserDto getOtherUser() { return otherUser; }
     public void setOtherUser(OtherUserDto otherUser) { this.otherUser = otherUser; }
+
+    public String getLastMessage() { return lastMessage; }
+    public void setLastMessage(String lastMessage) { this.lastMessage = lastMessage; }
+
+    public OffsetDateTime getLastMessageAt() { return lastMessageAt; }
+    public void setLastMessageAt(OffsetDateTime lastMessageAt) { this.lastMessageAt = lastMessageAt; }
+
+    public int getUnreadCount() { return unreadCount; }
+    public void setUnreadCount(int unreadCount) { this.unreadCount = unreadCount; }
 
     public static class OtherUserDto {
         private UUID id;

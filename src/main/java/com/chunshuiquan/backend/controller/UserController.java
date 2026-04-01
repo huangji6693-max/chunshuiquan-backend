@@ -146,6 +146,56 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // PUT /api/users/avatar/reorder — 重排照片顺序
+    @PutMapping("/avatar/reorder")
+    public ResponseEntity<?> reorderAvatars(
+            @AuthenticationPrincipal String userId,
+            @RequestBody Map<String, List<String>> body) {
+        List<String> newOrder = body.get("avatarUrls");
+        if (newOrder == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "avatarUrls 不能为空"));
+        }
+
+        return profileRepository.findById(UUID.fromString(userId))
+                .map(profile -> {
+                    List<String> current = new ArrayList<>(Arrays.asList(
+                            profile.getAvatarUrls() != null ? profile.getAvatarUrls() : new String[0]
+                    ));
+
+                    // 验证新列表与原列表包含相同的URL（防止篡改）
+                    List<String> sortedCurrent = new ArrayList<>(current);
+                    List<String> sortedNew = new ArrayList<>(newOrder);
+                    java.util.Collections.sort(sortedCurrent);
+                    java.util.Collections.sort(sortedNew);
+                    if (!sortedCurrent.equals(sortedNew)) {
+                        return ResponseEntity.badRequest().body(
+                                (Object) Map.of("error", "照片列表不匹配，不能添加或删除照片"));
+                    }
+
+                    // 同步更新 photoStatuses 顺序
+                    List<String> statuses = new ArrayList<>(Arrays.asList(
+                            profile.getPhotoStatuses() != null ? profile.getPhotoStatuses() : new String[0]
+                    ));
+                    // 建立 url -> status 映射
+                    Map<String, String> urlStatusMap = new HashMap<>();
+                    for (int i = 0; i < current.size(); i++) {
+                        String status = i < statuses.size() ? statuses.get(i) : "approved";
+                        urlStatusMap.put(current.get(i), status);
+                    }
+                    // 按新顺序重建 statuses
+                    List<String> newStatuses = new ArrayList<>();
+                    for (String url : newOrder) {
+                        newStatuses.add(urlStatusMap.getOrDefault(url, "approved"));
+                    }
+
+                    profile.setAvatarUrls(newOrder.toArray(new String[0]));
+                    profile.setPhotoStatuses(newStatuses.toArray(new String[0]));
+                    profile = profileRepository.save(profile);
+                    return ResponseEntity.ok((Object) profile);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // DELETE /api/users/avatar/{index} — 删除头像（按 index）
     @DeleteMapping("/avatar/{index}")
     public ResponseEntity<?> deleteAvatar(
