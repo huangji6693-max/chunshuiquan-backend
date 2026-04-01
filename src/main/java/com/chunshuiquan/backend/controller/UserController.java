@@ -36,6 +36,7 @@ public class UserController {
     private final BlockedUserRepository blockedUserRepository;
     private final ReportRepository reportRepository;
     private final GiftRecordRepository giftRecordRepository;
+    private final CoinTransactionRepository coinTransactionRepository;
     private final ClarifaiService clarifaiService;
     private final OnlineStatusService onlineStatusService;
 
@@ -46,6 +47,7 @@ public class UserController {
                           BlockedUserRepository blockedUserRepository,
                           ReportRepository reportRepository,
                           GiftRecordRepository giftRecordRepository,
+                          CoinTransactionRepository coinTransactionRepository,
                           ClarifaiService clarifaiService,
                           OnlineStatusService onlineStatusService) {
         this.profileRepository = profileRepository;
@@ -55,6 +57,7 @@ public class UserController {
         this.blockedUserRepository = blockedUserRepository;
         this.reportRepository = reportRepository;
         this.giftRecordRepository = giftRecordRepository;
+        this.coinTransactionRepository = coinTransactionRepository;
         this.clarifaiService = clarifaiService;
         this.onlineStatusService = onlineStatusService;
     }
@@ -345,6 +348,9 @@ public class UserController {
 
         // 6.5 删除礼物记录
         giftRecordRepository.deleteBySenderIdOrReceiverId(myId, myId);
+
+        // 6.6 删除金币流水
+        coinTransactionRepository.deleteByUserId(myId);
 
         // 7. 删除 profile
         profileRepository.deleteById(myId);

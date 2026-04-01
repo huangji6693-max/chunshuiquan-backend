@@ -22,15 +22,18 @@ public class GiftService {
     private final GiftRecordRepository giftRecordRepository;
     private final ProfileRepository profileRepository;
     private final MatchRepository matchRepository;
+    private final CoinService coinService;
 
     public GiftService(GiftRepository giftRepository,
                        GiftRecordRepository giftRecordRepository,
                        ProfileRepository profileRepository,
-                       MatchRepository matchRepository) {
+                       MatchRepository matchRepository,
+                       CoinService coinService) {
         this.giftRepository = giftRepository;
         this.giftRecordRepository = giftRecordRepository;
         this.profileRepository = profileRepository;
         this.matchRepository = matchRepository;
+        this.coinService = coinService;
     }
 
     /** 获取所有上架礼物 */
@@ -71,6 +74,10 @@ public class GiftService {
         }
         sender.setCoins(sender.getCoins() - gift.getCoins());
         profileRepository.save(sender);
+
+        // 记录金币消费流水
+        coinService.recordSpend(senderId, gift.getCoins(), sender.getCoins(),
+                "gift_sent", "送出礼物: " + gift.getName());
 
         // 4. 保存礼物记录
         GiftRecord record = new GiftRecord();
