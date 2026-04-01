@@ -9,6 +9,7 @@ import com.chunshuiquan.backend.repository.GiftRecordRepository;
 import com.chunshuiquan.backend.repository.GiftRepository;
 import com.chunshuiquan.backend.repository.MatchRepository;
 import com.chunshuiquan.backend.repository.ProfileRepository;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,17 +24,23 @@ public class GiftService {
     private final ProfileRepository profileRepository;
     private final MatchRepository matchRepository;
     private final CoinService coinService;
+    private final SimpMessagingTemplate messagingTemplate;
+    private final PushNotificationService pushNotificationService;
 
     public GiftService(GiftRepository giftRepository,
                        GiftRecordRepository giftRecordRepository,
                        ProfileRepository profileRepository,
                        MatchRepository matchRepository,
-                       CoinService coinService) {
+                       CoinService coinService,
+                       SimpMessagingTemplate messagingTemplate,
+                       PushNotificationService pushNotificationService) {
         this.giftRepository = giftRepository;
         this.giftRecordRepository = giftRecordRepository;
         this.profileRepository = profileRepository;
         this.matchRepository = matchRepository;
         this.coinService = coinService;
+        this.messagingTemplate = messagingTemplate;
+        this.pushNotificationService = pushNotificationService;
     }
 
     /** 获取所有上架礼物 */
@@ -89,7 +96,27 @@ public class GiftService {
 
         // 5. 组装返回
         Profile receiver = profileRepository.findById(receiverId).orElse(null);
-        return toDto(record, gift, sender, receiver);
+        GiftRecordDto dto = toDto(record, gift, sender, receiver);
+
+        // 6. WebSocket 实时推送给对方（/topic/user/{receiverId}/gifts）
+        messagingTemplate.convertAndSend("/topic/user/" + receiverId + "/gifts",
+                java.util.Map.of(
+                        "type", "gift_received",
+                        "giftName", gift.getName(),
+                        "giftIcon", gift.getIcon(),
+                        "giftCoins", gift.getCoins(),
+                        "senderName", sender.getName(),
+                        "senderId", senderId.toString(),
+                        "matchId", matchId.toString()
+                ));
+
+        // 7. FCM 离线推送
+        if (receiver != null && receiver.getFcmToken() != null) {
+            pushNotificationService.sendGiftNotification(
+                    receiver.getFcmToken(), sender.getName(), gift.getName(), matchId.toString());
+        }
+
+        return dto;
     }
 
     /** 查询我收到的礼物 */

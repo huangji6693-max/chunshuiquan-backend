@@ -61,6 +61,24 @@ public class PushNotificationService {
         }
     }
 
+    public void sendGiftNotification(String fcmToken, String senderName, String giftName, String matchId) {
+        if (!enabled || fcmToken == null || fcmToken.isBlank()) return;
+        try {
+            Message message = Message.builder()
+                    .setToken(fcmToken)
+                    .setNotification(Notification.builder()
+                            .setTitle("收到礼物!")
+                            .setBody(senderName + " 送了你一个" + giftName + " ❤️")
+                            .build())
+                    .putData("type", "gift_received")
+                    .putData("matchId", matchId)
+                    .build();
+            FirebaseMessaging.getInstance().send(message);
+        } catch (Exception e) {
+            logger.error("Failed to send gift notification to token {}", fcmToken, e);
+        }
+    }
+
     public void sendNewMessageNotification(String fcmToken, String senderName, String preview, String matchId) {
         if (!enabled || fcmToken == null || fcmToken.isBlank()) return;
         try {
