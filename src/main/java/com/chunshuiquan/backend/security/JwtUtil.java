@@ -64,6 +64,19 @@ public class JwtUtil {
         }
     }
 
+    /**
+     * 获取token剩余有效时间（毫秒），如果已过期返回0
+     */
+    public long getRemainingMillis(String token) {
+        try {
+            Date expiration = parseClaims(token).getExpiration();
+            long remaining = expiration.getTime() - System.currentTimeMillis();
+            return Math.max(remaining, 0);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(signingKey())

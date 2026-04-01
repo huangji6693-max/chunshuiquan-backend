@@ -18,13 +18,16 @@ public class AuthService {
     private final ProfileRepository profileRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
     public AuthService(ProfileRepository profileRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtUtil jwtUtil) {
+                       JwtUtil jwtUtil,
+                       TokenBlacklistService tokenBlacklistService) {
         this.profileRepository = profileRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     public AuthResponse register(RegisterRequest req) {
@@ -64,9 +67,15 @@ public class AuthService {
         if (!jwtUtil.isValid(refreshToken) || !jwtUtil.isRefreshToken(refreshToken)) {
             throw new IllegalArgumentException("无效的 refresh token");
         }
+        // 检查refresh token是否已被吊销（防止重放攻击）
+        if (tokenBlacklistService.isBlacklisted(refreshToken)) {
+            throw new IllegalArgumentException("该 refresh token 已被吊销");
+        }
         String userId = jwtUtil.extractUserId(refreshToken);
         Profile p = profileRepository.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+        // 将旧的refresh token加入黑名单，防止重放
+        tokenBlacklistService.blacklist(refreshToken, jwtUtil.getRemainingMillis(refreshToken));
         return AuthResponse.of(
                 jwtUtil.generateToken(userId),
                 jwtUtil.generateRefreshToken(userId), // rotation
