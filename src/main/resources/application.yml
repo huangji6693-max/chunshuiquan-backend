@@ -16,6 +16,11 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
+      timeout: 2000
+      lettuce:
+        pool:
+          max-active: 4
+          max-idle: 2
   jackson:
     time-zone: Asia/Shanghai
 
