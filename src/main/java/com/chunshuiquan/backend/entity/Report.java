@@ -27,6 +27,11 @@ public class Report {
     @Column(nullable = false)
     private Reason reason;
 
+    @Column(nullable = false)
+    private String status = "pending"; // pending / resolved
+
+    private String resolution; // warn / ban / dismiss
+
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 

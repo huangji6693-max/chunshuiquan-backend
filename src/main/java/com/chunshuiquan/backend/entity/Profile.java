@@ -83,6 +83,9 @@ public class Profile {
     @Column(name = "onboarding_completed")
     private Boolean onboardingCompleted = false; // 是否完成新手引导
 
+    @Column(nullable = false)
+    private Integer coins = 100; // 金币余额，新用户默认100
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "fcm_token")
     private String fcmToken;

@@ -35,6 +35,7 @@ public class UserController {
     private final SwipeRepository swipeRepository;
     private final BlockedUserRepository blockedUserRepository;
     private final ReportRepository reportRepository;
+    private final GiftRecordRepository giftRecordRepository;
     private final ClarifaiService clarifaiService;
     private final OnlineStatusService onlineStatusService;
 
@@ -44,6 +45,7 @@ public class UserController {
                           SwipeRepository swipeRepository,
                           BlockedUserRepository blockedUserRepository,
                           ReportRepository reportRepository,
+                          GiftRecordRepository giftRecordRepository,
                           ClarifaiService clarifaiService,
                           OnlineStatusService onlineStatusService) {
         this.profileRepository = profileRepository;
@@ -52,6 +54,7 @@ public class UserController {
         this.swipeRepository = swipeRepository;
         this.blockedUserRepository = blockedUserRepository;
         this.reportRepository = reportRepository;
+        this.giftRecordRepository = giftRecordRepository;
         this.clarifaiService = clarifaiService;
         this.onlineStatusService = onlineStatusService;
     }
@@ -339,6 +342,9 @@ public class UserController {
 
         // 6. 删除 reports
         reportRepository.deleteByReporterIdOrReportedId(myId, myId);
+
+        // 6.5 删除礼物记录
+        giftRecordRepository.deleteBySenderIdOrReceiverId(myId, myId);
 
         // 7. 删除 profile
         profileRepository.deleteById(myId);
