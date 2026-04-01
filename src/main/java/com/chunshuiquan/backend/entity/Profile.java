@@ -80,6 +80,9 @@ public class Profile {
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
 
+    @Column(name = "onboarding_completed")
+    private Boolean onboardingCompleted = false; // 是否完成新手引导
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "fcm_token")
     private String fcmToken;

@@ -226,15 +226,76 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // GET /api/users/feed — 推荐卡片列表
+    // GET /api/users/feed — 推荐卡片列表（支持年龄、性别、距离筛选）
     @GetMapping("/feed")
     public ResponseEntity<List<Profile>> feed(
             @AuthenticationPrincipal String userId,
-            @RequestParam(defaultValue = "20") int size) {
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) Integer minAge,
+            @RequestParam(required = false) Integer maxAge,
+            @RequestParam(required = false) String gender,
+            @RequestParam(required = false) Double maxDistance) {
         UUID myId = UUID.fromString(userId);
-        List<Profile> feed = profileRepository.findFeed(myId, PageRequest.of(0, size));
+
+        // 获取当前用户的经纬度，用于距离筛选
+        Double myLat = null;
+        Double myLon = null;
+        if (maxDistance != null) {
+            Profile me = profileRepository.findById(myId).orElse(null);
+            if (me != null && me.getLatitude() != null && me.getLongitude() != null) {
+                myLat = me.getLatitude();
+                myLon = me.getLongitude();
+            }
+        }
+
+        List<Profile> feed = profileRepository.findFeed(
+                myId, minAge, maxAge, gender, myLat, myLon, maxDistance,
+                PageRequest.of(0, size));
         feed.forEach(p -> p.setPasswordHash(null));
         return ResponseEntity.ok(feed);
+    }
+
+    // GET /api/users/nearby — 搜索附近的人
+    @GetMapping("/nearby")
+    public ResponseEntity<?> nearby(
+            @AuthenticationPrincipal String userId,
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude,
+            @RequestParam(defaultValue = "50") double radiusKm,
+            @RequestParam(defaultValue = "50") int size) {
+        UUID myId = UUID.fromString(userId);
+
+        // 如果前端没传经纬度，从当前用户资料获取
+        Double lat = latitude;
+        Double lon = longitude;
+        if (lat == null || lon == null) {
+            Profile me = profileRepository.findById(myId).orElse(null);
+            if (me != null && me.getLatitude() != null && me.getLongitude() != null) {
+                lat = me.getLatitude();
+                lon = me.getLongitude();
+            }
+        }
+        if (lat == null || lon == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "缺少经纬度信息，请先更新位置或传入 latitude/longitude 参数"));
+        }
+
+        List<Profile> nearby = profileRepository.findNearby(
+                myId, lat, lon, radiusKm, PageRequest.of(0, size));
+        nearby.forEach(p -> p.setPasswordHash(null));
+        return ResponseEntity.ok(nearby);
+    }
+
+    // PUT /api/users/onboarding-complete — 标记完成新手引导
+    @PutMapping("/onboarding-complete")
+    public ResponseEntity<?> completeOnboarding(@AuthenticationPrincipal String userId) {
+        return profileRepository.findById(UUID.fromString(userId))
+                .map(profile -> {
+                    profile.setOnboardingCompleted(true);
+                    profile = profileRepository.save(profile);
+                    return ResponseEntity.ok(profile);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // PUT /api/users/fcm-token — 更新 FCM 推送 token
