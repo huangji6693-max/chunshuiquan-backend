@@ -29,6 +29,10 @@ public class AuthResponse {
     private String drinking;
     private Double latitude;
     private Double longitude;
+    private Boolean onboardingCompleted;
+    private Integer coins;
+    private String vipTier;
+    private String birthDate;
 
     public static AuthResponse of(String token, String refreshToken, Profile p) {
         AuthResponse r = new AuthResponse();
@@ -51,6 +55,10 @@ public class AuthResponse {
         r.drinking = p.getDrinking();
         r.latitude = p.getLatitude();
         r.longitude = p.getLongitude();
+        r.onboardingCompleted = p.getOnboardingCompleted();
+        r.coins = p.getCoins();
+        r.vipTier = p.getVipTier();
+        r.birthDate = p.getBirthDate() != null ? p.getBirthDate().toString() : null;
         return r;
     }
 }
