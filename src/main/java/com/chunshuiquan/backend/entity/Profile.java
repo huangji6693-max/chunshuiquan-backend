@@ -86,6 +86,14 @@ public class Profile {
     @Column(nullable = false)
     private Integer coins = 100; // 金币余额，新用户默认100
 
+    /** VIP等级: none / gold / diamond */
+    @Column(name = "vip_tier", nullable = false)
+    private String vipTier = "none";
+
+    /** VIP到期时间 */
+    @Column(name = "vip_expires_at")
+    private OffsetDateTime vipExpiresAt;
+
     @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "fcm_token")
     private String fcmToken;

@@ -37,6 +37,7 @@ public class UserController {
     private final ReportRepository reportRepository;
     private final GiftRecordRepository giftRecordRepository;
     private final CoinTransactionRepository coinTransactionRepository;
+    private final VipOrderRepository vipOrderRepository;
     private final ClarifaiService clarifaiService;
     private final OnlineStatusService onlineStatusService;
 
@@ -48,6 +49,7 @@ public class UserController {
                           ReportRepository reportRepository,
                           GiftRecordRepository giftRecordRepository,
                           CoinTransactionRepository coinTransactionRepository,
+                          VipOrderRepository vipOrderRepository,
                           ClarifaiService clarifaiService,
                           OnlineStatusService onlineStatusService) {
         this.profileRepository = profileRepository;
@@ -58,6 +60,7 @@ public class UserController {
         this.reportRepository = reportRepository;
         this.giftRecordRepository = giftRecordRepository;
         this.coinTransactionRepository = coinTransactionRepository;
+        this.vipOrderRepository = vipOrderRepository;
         this.clarifaiService = clarifaiService;
         this.onlineStatusService = onlineStatusService;
     }
@@ -351,6 +354,9 @@ public class UserController {
 
         // 6.6 删除金币流水
         coinTransactionRepository.deleteByUserId(myId);
+
+        // 6.7 删除VIP订单
+        vipOrderRepository.deleteByUserId(myId);
 
         // 7. 删除 profile
         profileRepository.deleteById(myId);
