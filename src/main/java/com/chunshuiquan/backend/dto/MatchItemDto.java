@@ -39,17 +39,31 @@ public class MatchItemDto {
         private String bio;
         private List<String> avatarUrls;
         private String jobTitle;
+        private Integer height;
+        private String education;
+        private String zodiac;
+        private String city;
+        private String smoking;
+        private String drinking;
 
         public OtherUserDto() {}
 
         public OtherUserDto(UUID id, String email, String name, String bio,
-                            List<String> avatarUrls, String jobTitle) {
+                            List<String> avatarUrls, String jobTitle,
+                            Integer height, String education, String zodiac,
+                            String city, String smoking, String drinking) {
             this.id = id;
             this.email = email;
             this.name = name;
             this.bio = bio;
             this.avatarUrls = avatarUrls;
             this.jobTitle = jobTitle;
+            this.height = height;
+            this.education = education;
+            this.zodiac = zodiac;
+            this.city = city;
+            this.smoking = smoking;
+            this.drinking = drinking;
         }
 
         public UUID getId() { return id; }
@@ -69,5 +83,23 @@ public class MatchItemDto {
 
         public String getJobTitle() { return jobTitle; }
         public void setJobTitle(String jobTitle) { this.jobTitle = jobTitle; }
+
+        public Integer getHeight() { return height; }
+        public void setHeight(Integer height) { this.height = height; }
+
+        public String getEducation() { return education; }
+        public void setEducation(String education) { this.education = education; }
+
+        public String getZodiac() { return zodiac; }
+        public void setZodiac(String zodiac) { this.zodiac = zodiac; }
+
+        public String getCity() { return city; }
+        public void setCity(String city) { this.city = city; }
+
+        public String getSmoking() { return smoking; }
+        public void setSmoking(String smoking) { this.smoking = smoking; }
+
+        public String getDrinking() { return drinking; }
+        public void setDrinking(String drinking) { this.drinking = drinking; }
     }
 }

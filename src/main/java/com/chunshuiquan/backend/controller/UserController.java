@@ -5,6 +5,7 @@ import com.chunshuiquan.backend.entity.Match;
 import com.chunshuiquan.backend.entity.Profile;
 import com.chunshuiquan.backend.repository.*;
 import com.chunshuiquan.backend.service.ClarifaiService;
+import com.chunshuiquan.backend.service.OnlineStatusService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
@@ -15,7 +16,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -33,6 +36,7 @@ public class UserController {
     private final BlockedUserRepository blockedUserRepository;
     private final ReportRepository reportRepository;
     private final ClarifaiService clarifaiService;
+    private final OnlineStatusService onlineStatusService;
 
     public UserController(ProfileRepository profileRepository,
                           MessageRepository messageRepository,
@@ -40,7 +44,8 @@ public class UserController {
                           SwipeRepository swipeRepository,
                           BlockedUserRepository blockedUserRepository,
                           ReportRepository reportRepository,
-                          ClarifaiService clarifaiService) {
+                          ClarifaiService clarifaiService,
+                          OnlineStatusService onlineStatusService) {
         this.profileRepository = profileRepository;
         this.messageRepository = messageRepository;
         this.matchRepository = matchRepository;
@@ -48,6 +53,7 @@ public class UserController {
         this.blockedUserRepository = blockedUserRepository;
         this.reportRepository = reportRepository;
         this.clarifaiService = clarifaiService;
+        this.onlineStatusService = onlineStatusService;
     }
 
     // GET /api/users/me — 当前用户信息
@@ -73,6 +79,22 @@ public class UserController {
                         profile.setJobTitle(req.getJobTitle());
                     if (req.getLookingFor() != null)
                         profile.setLookingFor(req.getLookingFor());
+                    if (req.getHeight() != null)
+                        profile.setHeight(req.getHeight());
+                    if (req.getEducation() != null)
+                        profile.setEducation(req.getEducation());
+                    if (req.getZodiac() != null)
+                        profile.setZodiac(req.getZodiac());
+                    if (req.getCity() != null)
+                        profile.setCity(req.getCity());
+                    if (req.getSmoking() != null)
+                        profile.setSmoking(req.getSmoking());
+                    if (req.getDrinking() != null)
+                        profile.setDrinking(req.getDrinking());
+                    if (req.getLatitude() != null)
+                        profile.setLatitude(req.getLatitude());
+                    if (req.getLongitude() != null)
+                        profile.setLongitude(req.getLongitude());
                     profile = profileRepository.save(profile);
                     return ResponseEntity.ok(profile);
                 })
@@ -211,5 +233,21 @@ public class UserController {
         profileRepository.deleteById(myId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    // GET /api/users/{userId}/online — 查询用户在线状态
+    @GetMapping("/{userId}/online")
+    public ResponseEntity<Map<String, Object>> getOnlineStatus(@PathVariable String userId) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("online", onlineStatusService.isOnline(userId));
+        result.put("lastSeen", onlineStatusService.getLastSeen(userId));
+        return ResponseEntity.ok(result);
+    }
+
+    // POST /api/users/heartbeat — 前端定期调用刷新在线状态（30秒一次）
+    @PostMapping("/heartbeat")
+    public ResponseEntity<Void> heartbeat(@AuthenticationPrincipal String userId) {
+        onlineStatusService.markOnline(userId);
+        return ResponseEntity.ok().build();
     }
 }

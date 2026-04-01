@@ -55,6 +55,22 @@ public class Profile {
     @Column(columnDefinition = "text[]")
     private String[] tags = new String[0];
 
+    private Integer height;        // 身高(cm)
+
+    private String education;      // 学历: high_school/bachelor/master/phd
+
+    private String zodiac;         // 星座
+
+    private String city;           // 所在城市
+
+    private String smoking;        // 吸烟: never/occasionally/regularly
+
+    private String drinking;       // 饮酒: never/occasionally/regularly
+
+    private Double latitude;       // 纬度
+
+    private Double longitude;      // 经度
+
     @Column(name = "is_active")
     private Boolean isActive = true;
 

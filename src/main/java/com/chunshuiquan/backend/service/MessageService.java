@@ -1,5 +1,6 @@
 package com.chunshuiquan.backend.service;
 
+import com.chunshuiquan.backend.dto.MessageResponseDto;
 import com.chunshuiquan.backend.entity.Match;
 import com.chunshuiquan.backend.entity.Message;
 import com.chunshuiquan.backend.entity.Profile;
@@ -9,6 +10,7 @@ import com.chunshuiquan.backend.repository.ProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -27,6 +29,9 @@ public class MessageService {
 
     @Autowired
     private PushNotificationService pushNotificationService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     public Message sendMessage(UUID matchId, String senderId, String content) {
         Match match = matchRepository.findById(matchId)
@@ -49,7 +54,13 @@ public class MessageService {
 
         Message saved = messageRepository.save(message);
 
-        // 通知对方有新消息
+        // 通过 WebSocket 实时推送消息到 /topic/chat/{matchId}
+        MessageResponseDto wsPayload = new MessageResponseDto(
+                saved.getId(), saved.getContent(),
+                saved.getCreatedAt(), saved.getSenderId(), saved.getIsRead());
+        messagingTemplate.convertAndSend("/topic/chat/" + matchId, wsPayload);
+
+        // 通过 FCM 通知对方有新消息
         UUID receiverId = match.getUser1Id().equals(sender.getId())
                 ? match.getUser2Id() : match.getUser1Id();
         profileRepository.findById(receiverId).ifPresent(receiver -> {

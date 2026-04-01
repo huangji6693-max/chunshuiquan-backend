@@ -63,7 +63,9 @@ public class MatchController {
                             other.getId(), other.getEmail(), other.getName(),
                             other.getBio(),
                             other.getAvatarUrls() != null ? Arrays.asList(other.getAvatarUrls()) : Collections.emptyList(),
-                            other.getJobTitle()))
+                            other.getJobTitle(),
+                            other.getHeight(), other.getEducation(), other.getZodiac(),
+                            other.getCity(), other.getSmoking(), other.getDrinking()))
                     .orElse(null);
 
             return new MatchItemDto(match.getId(), match.getCreatedAt(), isNew, otherDto);

@@ -21,6 +21,14 @@ public class AuthResponse {
     private String bio;
     private String[] avatarUrls;
     private String[] tags;
+    private Integer height;
+    private String education;
+    private String zodiac;
+    private String city;
+    private String smoking;
+    private String drinking;
+    private Double latitude;
+    private Double longitude;
 
     public static AuthResponse of(String token, String refreshToken, Profile p) {
         AuthResponse r = new AuthResponse();
@@ -35,6 +43,14 @@ public class AuthResponse {
         r.bio = p.getBio();
         r.avatarUrls = p.getAvatarUrls();
         r.tags = p.getTags();
+        r.height = p.getHeight();
+        r.education = p.getEducation();
+        r.zodiac = p.getZodiac();
+        r.city = p.getCity();
+        r.smoking = p.getSmoking();
+        r.drinking = p.getDrinking();
+        r.latitude = p.getLatitude();
+        r.longitude = p.getLongitude();
         return r;
     }
 }

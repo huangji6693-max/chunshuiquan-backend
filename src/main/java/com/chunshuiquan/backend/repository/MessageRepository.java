@@ -4,6 +4,9 @@ import com.chunshuiquan.backend.entity.Message;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
@@ -20,4 +23,8 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
     long countByMatchIdAndSenderIdNotAndIsReadFalse(UUID matchId, UUID senderId);
 
     void deleteByMatchIdIn(Collection<UUID> matchIds);
+
+    @Modifying
+    @Query("UPDATE Message m SET m.isRead = true WHERE m.matchId = :matchId AND m.senderId != :readerId AND m.isRead = false")
+    int markAsRead(@Param("matchId") UUID matchId, @Param("readerId") UUID readerId);
 }
