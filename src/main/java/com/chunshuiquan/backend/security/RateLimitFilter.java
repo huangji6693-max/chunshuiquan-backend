@@ -29,9 +29,14 @@ public class RateLimitFilter implements Filter {
         HttpServletRequest httpReq = (HttpServletRequest) request;
         HttpServletResponse httpRes = (HttpServletResponse) response;
 
-        // 健康检查和Swagger不限流
+        // OPTIONS预检请求、健康检查、Swagger不限流
+        String method = httpReq.getMethod();
         String path = httpReq.getRequestURI();
-        if (path.startsWith("/api/health") || path.startsWith("/swagger") || path.startsWith("/api-docs")) {
+        if ("OPTIONS".equalsIgnoreCase(method)
+                || path.startsWith("/api/health")
+                || path.startsWith("/swagger")
+                || path.startsWith("/api-docs")
+                || path.startsWith("/ws")) {
             chain.doFilter(request, response);
             return;
         }
