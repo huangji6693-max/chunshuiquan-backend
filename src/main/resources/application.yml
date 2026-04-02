@@ -30,7 +30,7 @@ agora:
 
 # CORS 允许的前端域名
 cors:
-  allowed-origins: ${CORS_ORIGINS:https://app.chunshuiquan.com,https://web.chunshuiquan.com}
+  allowed-origins: ${CORS_ORIGINS:*}
 
 # Swagger/OpenAPI
 springdoc:
