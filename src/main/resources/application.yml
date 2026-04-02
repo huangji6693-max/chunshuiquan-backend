@@ -25,8 +25,8 @@ cloudinary:
   url: ${CLOUDINARY_URL:cloudinary://api_key:api_secret@cloud_name}
 
 agora:
-  appId: ${AGORA_APP_ID:}
-  appCertificate: ${AGORA_APP_CERTIFICATE:}
+  appId: ${AGORA_APP_ID:a22e31b0fe1e4e58b8bb9a3094862577}
+  appCertificate: ${AGORA_APP_CERTIFICATE:acd9447ac6624c1888cca53100c01e2b}
 
 # CORS 允许的前端域名
 cors:
