@@ -96,4 +96,23 @@ public class PushNotificationService {
             logger.error("Failed to send message notification to token {}", fcmToken, e);
         }
     }
+
+    public void sendCallInvite(String fcmToken, String callerName, String matchId) {
+        if (!enabled || fcmToken == null || fcmToken.isBlank()) return;
+        try {
+            Message message = Message.builder()
+                    .setToken(fcmToken)
+                    .setNotification(Notification.builder()
+                            .setTitle("语音通话")
+                            .setBody(callerName + " 想和你语音通话")
+                            .build())
+                    .putData("type", "call_invite")
+                    .putData("matchId", matchId)
+                    .putData("callerName", callerName)
+                    .build();
+            FirebaseMessaging.getInstance().send(message);
+        } catch (Exception e) {
+            logger.error("Failed to send call invite to token {}", fcmToken, e);
+        }
+    }
 }
