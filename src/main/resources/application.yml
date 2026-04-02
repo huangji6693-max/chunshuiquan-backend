@@ -18,7 +18,7 @@ server:
   port: ${PORT:8080}
 
 jwt:
-  secret: ${JWT_SECRET:dev-only-secret-key-change-in-production-min32chars}
+  secret: ${JWT_SECRET:chunshuiquan-jwt-secret-key-2026-min32chars}
   expiration: ${JWT_EXPIRATION:604800000}
 
 cloudinary:
