@@ -94,13 +94,13 @@ public interface ProfileRepository extends JpaRepository<Profile, UUID> {
                       + SIN(RADIANS(:lat)) * SIN(RADIANS(p.latitude)))
               )
           ) <= :radiusKm
-        ORDER BY (
-            6371.0 * ACOS(
+        ORDER BY
+            CASE WHEN p.boost_until > NOW() THEN 0 ELSE 1 END,
+            (6371.0 * ACOS(
                 LEAST(1.0, COS(RADIANS(:lat)) * COS(RADIANS(p.latitude))
                     * COS(RADIANS(p.longitude) - RADIANS(:lon))
                     + SIN(RADIANS(:lat)) * SIN(RADIANS(p.latitude)))
-            )
-        ) ASC
+            )) ASC
         """, nativeQuery = true)
     List<Profile> findNearby(
             @Param("myId") UUID myId,
