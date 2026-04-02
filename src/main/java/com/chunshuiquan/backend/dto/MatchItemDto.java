@@ -68,13 +68,15 @@ public class MatchItemDto {
         private String city;
         private String smoking;
         private String drinking;
+        private String vipTier;
 
         public OtherUserDto() {}
 
         public OtherUserDto(UUID id, String email, String name, String bio,
                             List<String> avatarUrls, String jobTitle,
                             Integer height, String education, String zodiac,
-                            String city, String smoking, String drinking) {
+                            String city, String smoking, String drinking,
+                            String vipTier) {
             this.id = id;
             this.email = email;
             this.name = name;
@@ -87,7 +89,11 @@ public class MatchItemDto {
             this.city = city;
             this.smoking = smoking;
             this.drinking = drinking;
+            this.vipTier = vipTier;
         }
+
+        public String getVipTier() { return vipTier; }
+        public void setVipTier(String vipTier) { this.vipTier = vipTier; }
 
         public UUID getId() { return id; }
         public void setId(UUID id) { this.id = id; }

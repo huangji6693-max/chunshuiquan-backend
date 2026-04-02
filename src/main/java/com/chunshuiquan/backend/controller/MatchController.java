@@ -67,7 +67,8 @@ public class MatchController {
                             other.getAvatarUrls() != null ? Arrays.asList(other.getAvatarUrls()) : Collections.emptyList(),
                             other.getJobTitle(),
                             other.getHeight(), other.getEducation(), other.getZodiac(),
-                            other.getCity(), other.getSmoking(), other.getDrinking()))
+                            other.getCity(), other.getSmoking(), other.getDrinking(),
+                            other.getVipTier()))
                     .orElse(null);
 
             // 查询最后一条消息
