@@ -58,7 +58,10 @@ public interface ProfileRepository extends JpaRepository<Profile, UUID> {
                   ) <= :maxDistanceKm
               )
           )
-        ORDER BY p.last_active DESC NULLS LAST
+        ORDER BY
+            CASE WHEN p.boost_until > NOW() THEN 0 ELSE 1 END,
+            CASE WHEN p.vip_tier != 'none' THEN 0 ELSE 1 END,
+            p.last_active DESC NULLS LAST
         """, nativeQuery = true)
     List<Profile> findFeed(
             @Param("myId") UUID myId,
