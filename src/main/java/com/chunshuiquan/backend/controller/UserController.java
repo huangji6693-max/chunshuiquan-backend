@@ -128,9 +128,13 @@ public class UserController {
                         .body(java.util.Map.of("error", "图片包含不适宜内容，请更换"));
             }
         } catch (TimeoutException e) {
-            logger.warn("Clarifai pre-check timeout for {}, proceeding (fail-open)", url);
+            logger.warn("Clarifai pre-check timeout for {}, rejecting (fail-close)", url);
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", "图片审核超时，请重试"));
         } catch (Exception e) {
-            logger.error("Clarifai pre-check error for {}, proceeding (fail-open)", url, e);
+            logger.error("Clarifai pre-check error for {}, rejecting (fail-close)", url, e);
+            return ResponseEntity.badRequest()
+                    .body(java.util.Map.of("error", "图片审核失败，请重试"));
         }
 
         return profileRepository.findById(UUID.fromString(userId))
@@ -235,10 +239,11 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // GET /api/users/feed — 推荐卡片列表（支持年龄、性别、距离筛选）
+    // GET /api/users/feed — 推荐卡片列表（支持年龄、性别、距离筛选 + 分页）
     @GetMapping("/feed")
     public ResponseEntity<List<Profile>> feed(
             @AuthenticationPrincipal String userId,
+            @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) Integer minAge,
             @RequestParam(required = false) Integer maxAge,
@@ -259,7 +264,7 @@ public class UserController {
 
         List<Profile> feed = profileRepository.findFeed(
                 myId, minAge, maxAge, gender, myLat, myLon, maxDistance,
-                PageRequest.of(0, size));
+                PageRequest.of(page, size));
         feed.forEach(p -> p.setPasswordHash(null));
         return ResponseEntity.ok(feed);
     }

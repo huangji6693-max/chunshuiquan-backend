@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://gondola.proxy.rlwy.net:36761/railway
-    username: postgres
-    password: AASwOkfKgTMlYXDwyJqMlaXxzymWlOOf
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/chunshuiquan}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -15,15 +15,28 @@ spring:
     time-zone: Asia/Shanghai
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 jwt:
-  secret: chunshuiquan-jwt-secret-key-2026-min32chars
-  expiration: 604800000
+  secret: ${JWT_SECRET:dev-only-secret-key-change-in-production-min32chars}
+  expiration: ${JWT_EXPIRATION:604800000}
 
 cloudinary:
   url: ${CLOUDINARY_URL:cloudinary://api_key:api_secret@cloud_name}
 
 agora:
-  appId: ${AGORA_APP_ID:a22e31b0fe1e4e58b8bb9a3094862577}
-  appCertificate: ${AGORA_APP_CERTIFICATE:acd9447ac6624c1888cca53100c01e2b}
+  appId: ${AGORA_APP_ID:}
+  appCertificate: ${AGORA_APP_CERTIFICATE:}
+
+# CORS 允许的前端域名
+cors:
+  allowed-origins: ${CORS_ORIGINS:https://app.chunshuiquan.com,https://web.chunshuiquan.com}
+
+# Swagger/OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha

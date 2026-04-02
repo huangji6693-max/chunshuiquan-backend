@@ -5,6 +5,8 @@ import com.chunshuiquan.backend.entity.Profile;
 import com.chunshuiquan.backend.entity.VipOrder;
 import com.chunshuiquan.backend.repository.ProfileRepository;
 import com.chunshuiquan.backend.repository.VipOrderRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +37,8 @@ public class VipService {
         this.vipOrderRepository = vipOrderRepository;
     }
 
-    /** 获取VIP状态 */
+    /** 获取VIP状态（缓存5分钟） */
+    @Cacheable(value = "vipStatus", key = "#userId")
     public VipStatusDto getStatus(UUID userId) {
         Profile profile = profileRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
@@ -66,7 +69,8 @@ public class VipService {
         return PLANS;
     }
 
-    /** 订阅VIP */
+    /** 订阅VIP（清除缓存） */
+    @CacheEvict(value = "vipStatus", key = "#userId")
     @Transactional
     public VipStatusDto subscribe(UUID userId, String planId, String receipt, String platform) {
         int[] plan = PLANS.get(planId);
@@ -80,7 +84,7 @@ public class VipService {
 
         // TODO: 根据 platform 校验 receipt
 
-        Profile profile = profileRepository.findById(userId)
+        Profile profile = profileRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
 
         // 如果当前已有VIP且未过期，在现有基础上续期

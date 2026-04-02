@@ -1,8 +1,10 @@
 package com.chunshuiquan.backend.repository;
 
 import com.chunshuiquan.backend.entity.Profile;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -13,6 +15,11 @@ import java.util.UUID;
 public interface ProfileRepository extends JpaRepository<Profile, UUID> {
 
     Optional<Profile> findByEmail(String email);
+
+    /** 悲观锁查询——用于VIP订阅、Boost激活、金币扣费等需要并发安全的场景 */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Profile p WHERE p.id = :id")
+    Optional<Profile> findByIdForUpdate(@Param("id") UUID id);
 
     boolean existsByEmail(String email);
 

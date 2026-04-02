@@ -52,7 +52,7 @@ public class BoostController {
     @Transactional
     public ResponseEntity<?> activate(@AuthenticationPrincipal String userId) {
         UUID myId = UUID.fromString(userId);
-        Profile profile = profileRepository.findById(myId).orElse(null);
+        Profile profile = profileRepository.findByIdForUpdate(myId).orElse(null);
         if (profile == null) return ResponseEntity.notFound().build();
 
         // VIP免费检查

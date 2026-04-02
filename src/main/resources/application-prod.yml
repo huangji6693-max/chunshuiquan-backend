@@ -1,0 +1,15 @@
+# 生产环境配置 — Railway 部署时设置 SPRING_PROFILES_ACTIVE=prod
+# 所有敏感值从环境变量读取，不在此文件中硬编码
+
+spring:
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    root: WARN
+    com.chunshuiquan: INFO
+    org.springframework.security: WARN

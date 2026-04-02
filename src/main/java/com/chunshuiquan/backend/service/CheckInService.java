@@ -67,8 +67,8 @@ public class CheckInService {
         checkIn.setStreakDay(streak);
         checkInRepository.save(checkIn);
 
-        // 发放金币
-        Profile profile = profileRepository.findById(userId)
+        // 发放金币（悲观锁防并发）
+        Profile profile = profileRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
         profile.setCoins(profile.getCoins() + reward);
         profileRepository.save(profile);

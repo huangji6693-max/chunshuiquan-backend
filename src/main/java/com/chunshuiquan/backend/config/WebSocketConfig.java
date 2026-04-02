@@ -4,6 +4,7 @@ import com.chunshuiquan.backend.security.WebSocketAuthInterceptor;
 import com.chunshuiquan.backend.service.OnlineStatusService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -24,6 +25,9 @@ import java.security.Principal;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(WebSocketConfig.class);
+
+    @Value("${cors.allowed-origins:*}")
+    private String corsOrigins;
 
     private final WebSocketAuthInterceptor webSocketAuthInterceptor;
     private final OnlineStatusService onlineStatusService;
@@ -46,7 +50,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // WebSocket 端点，允许所有 origin，支持 SockJS fallback
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOriginPatterns(corsOrigins.split(","))
                 .withSockJS();
     }
 

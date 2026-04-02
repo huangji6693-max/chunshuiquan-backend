@@ -6,6 +6,7 @@ import com.chunshuiquan.backend.entity.Report;
 import com.chunshuiquan.backend.repository.ProfileRepository;
 import com.chunshuiquan.backend.repository.ReportRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     private final ReportRepository reportRepository;
