@@ -37,7 +37,8 @@ public class AuthService {
         Profile p = new Profile();
         p.setEmail(req.getEmail());
         p.setPasswordHash(passwordEncoder.encode(req.getPassword()));
-        p.setName(req.getName());
+        p.setName(req.getName() != null && !req.getName().isBlank()
+                ? req.getName() : req.getEmail().split("@")[0]);
         p.setBirthDate(req.getBirthDate());
         p.setGender(req.getGender());
         p = profileRepository.save(p);

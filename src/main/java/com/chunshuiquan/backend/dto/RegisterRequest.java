@@ -16,12 +16,9 @@ public class RegisterRequest {
     @Size(min = 6, message = "密码至少6位")
     private String password;
 
-    @NotBlank
-    private String name;
+    private String name;          // 可选，默认用邮箱前缀
 
-    @NotNull
-    @Past
-    private LocalDate birthDate;
+    private LocalDate birthDate;   // 可选，Onboarding中补填
 
     @NotBlank
     @Pattern(regexp = "male|female|other")
