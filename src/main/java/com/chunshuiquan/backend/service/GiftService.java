@@ -9,7 +9,6 @@ import com.chunshuiquan.backend.repository.GiftRecordRepository;
 import com.chunshuiquan.backend.repository.GiftRepository;
 import com.chunshuiquan.backend.repository.MatchRepository;
 import com.chunshuiquan.backend.repository.ProfileRepository;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +44,6 @@ public class GiftService {
     }
 
     /** 获取所有上架礼物（缓存30分钟） */
-    @Cacheable("giftList")
     public List<Gift> listGifts() {
         return giftRepository.findByIsActiveTrueOrderByCoinsAsc();
     }

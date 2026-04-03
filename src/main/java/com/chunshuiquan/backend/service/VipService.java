@@ -5,8 +5,6 @@ import com.chunshuiquan.backend.entity.Profile;
 import com.chunshuiquan.backend.entity.VipOrder;
 import com.chunshuiquan.backend.repository.ProfileRepository;
 import com.chunshuiquan.backend.repository.VipOrderRepository;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +36,6 @@ public class VipService {
     }
 
     /** 获取VIP状态（缓存5分钟） */
-    @Cacheable(value = "vipStatus", key = "#userId")
     public VipStatusDto getStatus(UUID userId) {
         Profile profile = profileRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
@@ -70,7 +67,6 @@ public class VipService {
     }
 
     /** 订阅VIP（清除缓存） */
-    @CacheEvict(value = "vipStatus", key = "#userId")
     @Transactional
     public VipStatusDto subscribe(UUID userId, String planId, String receipt, String platform) {
         int[] plan = PLANS.get(planId);
