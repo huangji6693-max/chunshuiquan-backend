@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/moments")
@@ -42,7 +43,7 @@ public class MomentController {
         UUID myId = UUID.fromString(userId);
         Page<Moment> moments = momentRepository
                 .findByIsDeletedFalseAndVisibilityOrderByCreatedAtDesc("public", PageRequest.of(page, size));
-        List<MomentDto> dtos = moments.stream().map(m -> toDto(m, myId)).toList();
+        List<MomentDto> dtos = toBatchDto(moments.getContent(), myId);
         return ResponseEntity.ok(dtos);
     }
 
@@ -56,7 +57,7 @@ public class MomentController {
         UUID myId = UUID.fromString(userId);
         Page<Moment> moments = momentRepository
                 .findByAuthorIdAndIsDeletedFalseOrderByCreatedAtDesc(targetUserId, PageRequest.of(page, size));
-        List<MomentDto> dtos = moments.stream().map(m -> toDto(m, myId)).toList();
+        List<MomentDto> dtos = toBatchDto(moments.getContent(), myId);
         return ResponseEntity.ok(dtos);
     }
 
@@ -130,7 +131,7 @@ public class MomentController {
     @GetMapping("/{id}/comments")
     public ResponseEntity<List<CommentDto>> getComments(@PathVariable UUID id) {
         List<MomentComment> comments = momentCommentRepository.findByMomentIdOrderByCreatedAtAsc(id);
-        List<CommentDto> dtos = comments.stream().map(this::toCommentDto).toList();
+        List<CommentDto> dtos = toBatchCommentDto(comments);
         return ResponseEntity.ok(dtos);
     }
 
@@ -167,42 +168,77 @@ public class MomentController {
 
     // ========== 私有方法 ==========
 
-    private MomentDto toDto(Moment m, UUID viewerId) {
-        MomentDto dto = new MomentDto();
-        dto.setId(m.getId().toString());
-        dto.setAuthorId(m.getAuthorId().toString());
-        dto.setContent(m.getContent());
-        dto.setImageUrls(m.getImageUrls() != null ? Arrays.asList(m.getImageUrls()) : List.of());
-        dto.setLocation(m.getLocation());
-        dto.setLikeCount(m.getLikeCount());
-        dto.setCommentCount(m.getCommentCount());
-        dto.setLikedByMe(momentLikeRepository.existsByMomentIdAndUserId(m.getId(), viewerId));
-        dto.setCreatedAt(m.getCreatedAt());
+    /** 批量转换动态列表（消除 N+1：一次查所有作者Profile + 一次查所有点赞状态） */
+    private List<MomentDto> toBatchDto(List<Moment> moments, UUID viewerId) {
+        if (moments.isEmpty()) return List.of();
 
-        profileRepository.findById(m.getAuthorId()).ifPresent(p -> {
-            dto.setAuthorName(p.getName());
-            dto.setAuthorAvatar(p.getAvatarUrls() != null && p.getAvatarUrls().length > 0
-                    ? p.getAvatarUrls()[0] : null);
-            dto.setAuthorVipTier(p.getVipTier());
-        });
+        // 1) 批量查询所有作者的 Profile（1次SQL）
+        List<UUID> authorIds = moments.stream().map(Moment::getAuthorId).distinct().toList();
+        Map<UUID, Profile> profileMap = profileRepository.findAllById(authorIds)
+                .stream().collect(Collectors.toMap(Profile::getId, p -> p));
 
-        return dto;
+        // 2) 批量查询当前用户对这些动态的点赞状态（1次SQL）
+        List<UUID> momentIds = moments.stream().map(Moment::getId).toList();
+        Set<UUID> likedSet = new HashSet<>(momentLikeRepository.findLikedMomentIds(viewerId, momentIds));
+
+        // 3) 组装 DTO
+        return moments.stream().map(m -> {
+            MomentDto dto = new MomentDto();
+            dto.setId(m.getId().toString());
+            dto.setAuthorId(m.getAuthorId().toString());
+            dto.setContent(m.getContent());
+            dto.setImageUrls(m.getImageUrls() != null ? Arrays.asList(m.getImageUrls()) : List.of());
+            dto.setLocation(m.getLocation());
+            dto.setLikeCount(m.getLikeCount());
+            dto.setCommentCount(m.getCommentCount());
+            dto.setLikedByMe(likedSet.contains(m.getId()));
+            dto.setCreatedAt(m.getCreatedAt());
+
+            Profile p = profileMap.get(m.getAuthorId());
+            if (p != null) {
+                dto.setAuthorName(p.getName());
+                dto.setAuthorAvatar(p.getAvatarUrls() != null && p.getAvatarUrls().length > 0
+                        ? p.getAvatarUrls()[0] : null);
+                dto.setAuthorVipTier(p.getVipTier());
+            }
+            return dto;
+        }).toList();
     }
 
+    /** 单条动态转换（用于 create 等只返回一条的场景） */
+    private MomentDto toDto(Moment m, UUID viewerId) {
+        return toBatchDto(List.of(m), viewerId).get(0);
+    }
+
+    /** 批量转换评论列表（消除 N+1：一次查所有评论者Profile） */
+    private List<CommentDto> toBatchCommentDto(List<MomentComment> comments) {
+        if (comments.isEmpty()) return List.of();
+
+        // 批量查询所有评论者的 Profile（1次SQL）
+        List<UUID> authorIds = comments.stream().map(MomentComment::getAuthorId).distinct().toList();
+        Map<UUID, Profile> profileMap = profileRepository.findAllById(authorIds)
+                .stream().collect(Collectors.toMap(Profile::getId, p -> p));
+
+        return comments.stream().map(c -> {
+            CommentDto dto = new CommentDto();
+            dto.setId(c.getId().toString());
+            dto.setAuthorId(c.getAuthorId().toString());
+            dto.setReplyToId(c.getReplyToId() != null ? c.getReplyToId().toString() : null);
+            dto.setContent(c.getContent());
+            dto.setCreatedAt(c.getCreatedAt());
+
+            Profile p = profileMap.get(c.getAuthorId());
+            if (p != null) {
+                dto.setAuthorName(p.getName());
+                dto.setAuthorAvatar(p.getAvatarUrls() != null && p.getAvatarUrls().length > 0
+                        ? p.getAvatarUrls()[0] : null);
+            }
+            return dto;
+        }).toList();
+    }
+
+    /** 单条评论转换（用于 addComment 等只返回一条的场景） */
     private CommentDto toCommentDto(MomentComment c) {
-        CommentDto dto = new CommentDto();
-        dto.setId(c.getId().toString());
-        dto.setAuthorId(c.getAuthorId().toString());
-        dto.setReplyToId(c.getReplyToId() != null ? c.getReplyToId().toString() : null);
-        dto.setContent(c.getContent());
-        dto.setCreatedAt(c.getCreatedAt());
-
-        profileRepository.findById(c.getAuthorId()).ifPresent(p -> {
-            dto.setAuthorName(p.getName());
-            dto.setAuthorAvatar(p.getAvatarUrls() != null && p.getAvatarUrls().length > 0
-                    ? p.getAvatarUrls()[0] : null);
-        });
-
-        return dto;
+        return toBatchCommentDto(List.of(c)).get(0);
     }
 }

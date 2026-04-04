@@ -42,9 +42,14 @@ public class LikesController {
                 me.getVipExpiresAt() != null &&
                 me.getVipExpiresAt().isAfter(java.time.OffsetDateTime.now());
 
+        // 批量查询所有喜欢者的 Profile（消除 N+1，1次SQL替代N次）
+        List<UUID> likerIds = likes.stream().map(Swipe::getSwiperId).distinct().toList();
+        Map<UUID, Profile> profileMap = profileRepository.findAllById(likerIds)
+                .stream().collect(java.util.stream.Collectors.toMap(Profile::getId, p -> p));
+
         List<Map<String, Object>> result = new ArrayList<>();
         for (Swipe swipe : likes) {
-            Profile liker = profileRepository.findById(swipe.getSwiperId()).orElse(null);
+            Profile liker = profileMap.get(swipe.getSwiperId());
             if (liker == null) continue;
 
             Map<String, Object> item = new LinkedHashMap<>();
@@ -62,7 +67,8 @@ public class LikesController {
                 item.put("blurred", false);
             } else {
                 // 非VIP: 模糊信息
-                item.put("name", liker.getName().substring(0, 1) + "**");
+                item.put("name", liker.getName() != null && !liker.getName().isEmpty()
+                        ? liker.getName().substring(0, 1) + "**" : "**");
                 item.put("avatarUrl", liker.getAvatarUrls() != null && liker.getAvatarUrls().length > 0 ?
                         liker.getAvatarUrls()[0] : null);
                 item.put("blurred", true);

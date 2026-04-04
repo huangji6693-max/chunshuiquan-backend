@@ -77,7 +77,7 @@ public class UserController {
     @PutMapping("/profile")
     public ResponseEntity<?> updateProfile(
             @AuthenticationPrincipal String userId,
-            @RequestBody UpdateProfileRequest req) {
+            @jakarta.validation.Valid @RequestBody UpdateProfileRequest req) {
         return profileRepository.findById(UUID.fromString(userId))
                 .map(profile -> {
                     if (req.getName() != null && !req.getName().isBlank())
