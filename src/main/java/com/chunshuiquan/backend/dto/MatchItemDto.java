@@ -2,12 +2,14 @@ package com.chunshuiquan.backend.dto;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 
 public class MatchItemDto {
 
     private UUID matchId;
     private OffsetDateTime createdAt;
+    @JsonProperty("isNew")
     private boolean isNew;
     private OtherUserDto otherUser;
     private String lastMessage;              // 最后一条消息内容（截取50字符）
