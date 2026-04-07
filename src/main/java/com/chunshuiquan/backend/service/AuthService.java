@@ -42,7 +42,11 @@ public class AuthService {
         p.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         p.setName(req.getName() != null && !req.getName().isBlank()
                 ? req.getName() : email.split("@")[0]);
-        p.setBirthDate(req.getBirthDate());
+        // [fix] birthDate 默认值 — Profile.birth_date 是 NOT NULL 列, 不能 null
+        // 用户在 Onboarding 阶段会更新真实生日。原 commit 56f26a8 只改了 DTO 漏了这里, 导致 500
+        p.setBirthDate(req.getBirthDate() != null
+                ? req.getBirthDate()
+                : java.time.LocalDate.of(2000, 1, 1));
         p.setGender(req.getGender());
         p = profileRepository.save(p);
         String userId = p.getId().toString();
