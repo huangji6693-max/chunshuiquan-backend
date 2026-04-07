@@ -46,7 +46,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGeneral(Exception e) {
         logger.error("未处理异常", e);
+        // [debug] 暴露真实异常类型 + message 便于诊断 demo 期 bug
+        // 生产环境应改回笼统错误
+        String detail = e.getClass().getSimpleName() + ": " + (e.getMessage() != null ? e.getMessage() : "no message");
+        Throwable cause = e.getCause();
+        if (cause != null) {
+            detail += " | cause: " + cause.getClass().getSimpleName() + ": " + cause.getMessage();
+        }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "服务器内部错误，请稍后重试"));
+                .body(Map.of("error", "服务器内部错误", "detail", detail));
     }
 }
