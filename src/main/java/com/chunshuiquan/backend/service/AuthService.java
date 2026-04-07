@@ -31,14 +31,17 @@ public class AuthService {
     }
 
     public AuthResponse register(RegisterRequest req) {
-        if (profileRepository.existsByEmail(req.getEmail())) {
-            throw new IllegalArgumentException("该邮箱已注册");
+        // [fix] email 强制 toLowerCase + trim 防止大小写/空格导致重复
+        final String email = normalizeEmail(req.getEmail());
+        if (profileRepository.existsByEmail(email)) {
+            // [fix] 抛 EmailAlreadyExists 让 controller 返回 409 + 引导前端跳转登录
+            throw new EmailAlreadyExistsException("该邮箱已注册，请直接登录");
         }
         Profile p = new Profile();
-        p.setEmail(req.getEmail());
+        p.setEmail(email);
         p.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         p.setName(req.getName() != null && !req.getName().isBlank()
-                ? req.getName() : req.getEmail().split("@")[0]);
+                ? req.getName() : email.split("@")[0]);
         p.setBirthDate(req.getBirthDate());
         p.setGender(req.getGender());
         p = profileRepository.save(p);
@@ -50,7 +53,9 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest req) {
-        Profile p = profileRepository.findByEmail(req.getEmail())
+        // [fix] email 同步 normalize 保证一致性
+        final String email = normalizeEmail(req.getEmail());
+        Profile p = profileRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在或密码错误"));
         if (!passwordEncoder.matches(req.getPassword(), p.getPasswordHash())) {
             throw new IllegalArgumentException("用户不存在或密码错误");
@@ -62,6 +67,15 @@ public class AuthService {
                 jwtUtil.generateToken(userId),
                 jwtUtil.generateRefreshToken(userId),
                 p);
+    }
+
+    private static String normalizeEmail(String raw) {
+        return raw == null ? "" : raw.trim().toLowerCase();
+    }
+
+    /** 邮箱已注册异常 — Controller 捕获后返回 409 Conflict */
+    public static class EmailAlreadyExistsException extends RuntimeException {
+        public EmailAlreadyExistsException(String msg) { super(msg); }
     }
 
     public AuthResponse refresh(String refreshToken) {

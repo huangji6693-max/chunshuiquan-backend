@@ -10,6 +10,7 @@ import com.chunshuiquan.backend.service.AuthService;
 import com.chunshuiquan.backend.service.TokenBlacklistService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -71,5 +72,12 @@ public class AuthController {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleBiz(IllegalArgumentException e) {
         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    }
+
+    /** [fix] 邮箱已注册 — 返回 409 让前端识别后跳转登录页 */
+    @ExceptionHandler(AuthService.EmailAlreadyExistsException.class)
+    public ResponseEntity<Map<String, String>> handleEmailExists(AuthService.EmailAlreadyExistsException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", e.getMessage(), "code", "EMAIL_EXISTS"));
     }
 }
